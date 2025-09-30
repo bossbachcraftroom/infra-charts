@@ -1,0 +1,6 @@
+apiVersion: v2
+name: imagepolis
+description: A simple Docker Registry with Joxit UI
+type: application
+version: 0.1.0
+appVersion: "1.0"

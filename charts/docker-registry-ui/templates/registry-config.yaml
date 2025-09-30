@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-registry-config
+data:
+  config.yml: |
+    version: 0.1
+    http:
+      addr: :{{ .Values.registry.containerPort }}
+    storage:
+      filesystem:
+        rootdirectory: /var/lib/registry
+      delete:
+        enabled: true

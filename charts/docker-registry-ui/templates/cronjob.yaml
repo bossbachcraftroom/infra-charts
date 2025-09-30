@@ -1,0 +1,91 @@
+{{- if .Values.registry.gcSchedule }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-registry-cron
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-registry-cron-role
+  namespace: {{ .Release.Namespace }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "deployments/scale"]
+    verbs: ["get", "update", "patch", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-registry-cron-rb
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-registry-cron
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ .Release.Name }}-registry-cron-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-registry-gc
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.registry.gcSchedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 172800  # cleans up 2 days after job finishes
+      activeDeadlineSeconds: 300 # max time to finish the job before failing
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: {{ .Release.Name }}-registry-cron
+          restartPolicy: OnFailure
+          containers:
+            - name: registry-gc
+              image: wunderkeks95/registry-kubectl:1
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  NAMESPACE="{{ .Release.Namespace }}"
+                  APP="{{ .Release.Name }}-registry"
+                  echo "Scaling down registry deployment..."
+                  kubectl scale deployment/$APP -n $NAMESPACE --replicas=0
+                  echo "Waiting for pods to terminate..."
+                  while [ "$(kubectl get pods -n $NAMESPACE -l app=$APP -o jsonpath='{.items}')" != "[]" ]; do
+                    echo "Waiting for pods to terminate..."
+                    sleep 5
+                  done
+                  echo "Running garbage collection..."
+                  registry garbage-collect /etc/docker/registry/config.yml
+                  echo "Scaling registry deployment back up..."
+                  kubectl scale deployment/$APP -n $NAMESPACE --replicas=1
+              volumeMounts:
+                - name: registry-storage
+                  mountPath: /var/lib/registry
+                - name: registry-config
+                  mountPath: /etc/docker/registry
+          volumes:
+            - name: registry-storage
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-registry-pvc
+            - name: registry-config
+              configMap:
+                name: {{ .Release.Name }}-registry-config
+{{- end }}

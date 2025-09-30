@@ -1,0 +1,29 @@
+{{- if .Values.ingressRegistry.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-registry
+  annotations:
+{{ toYaml .Values.ingressRegistry.annotations | indent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingressRegistry.className }}
+  rules:
+    - host: {{ .Values.ingressRegistry.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingressRegistry.path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-registry-svc
+                port:
+                  number: 80
+  tls:
+    {{- range .Values.ingressRegistry.tls }}
+    - secretName: {{ .secretName }}
+      hosts:
+        {{- range .hosts }}
+        - {{ . }}
+        {{- end }}
+    {{- end }}
+{{- end }}

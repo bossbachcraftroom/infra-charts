@@ -1,0 +1,19 @@
+{{- if and .Values.ingressRegistry.enabled .Values.ingressRegistry.tls }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ index .Values.ingressRegistry.tls 0 "secretName" }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ index .Values.ingressRegistry.tls 0 "secretName" }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: {{ index .Values.ingressRegistry.annotations "cert-manager.io/cluster-issuer" }}
+  dnsNames:
+    {{- range index .Values.ingressRegistry.tls 0 "hosts" }}
+    - {{ . }}
+    {{- end }}
+  usages:
+    - digital signature
+    - key encipherment
+{{- end }}

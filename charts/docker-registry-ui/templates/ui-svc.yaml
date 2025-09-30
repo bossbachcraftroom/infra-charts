@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-registry-ui-svc
+spec:
+  selector:
+    app: {{ .Release.Name }}-registry-ui
+  ports:
+    - port: {{ .Values.ui.servicePort }}
+      targetPort: {{ .Values.ui.containerPort }}
+      name: http
+  type: ClusterIP

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-registry-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-registry-ui
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-registry-ui
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-registry-ui
+          image: {{ .Values.ui.image }}
+          ports:
+            - containerPort: {{ .Values.ui.containerPort }}
+          env:
+            {{- range .Values.ui.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          resources: {{- toYaml .Values.ui.resources | nindent 12 }}

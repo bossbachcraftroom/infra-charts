@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-registry
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-registry
+    spec:
+      containers:
+        - name: {{ .Release.Name }}-registry
+          image: {{ .Values.registry.image }}
+          ports:
+            - containerPort: {{ .Values.registry.containerPort }}
+          volumeMounts:
+            - name: registry-storage
+              mountPath: /var/lib/registry
+            - name: registry-config
+              mountPath: /etc/docker/registry
+          env:
+            {{- range .Values.registry.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+      volumes:
+        - name: registry-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-registry-pvc
+        - name: registry-config
+          configMap:
+            name: {{ .Release.Name }}-registry-config

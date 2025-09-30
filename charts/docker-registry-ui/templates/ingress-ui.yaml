@@ -1,0 +1,29 @@
+{{- if .Values.ingressUi.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-registry-ui
+  annotations:
+{{ toYaml .Values.ingressUi.annotations | indent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingressUi.className }}
+  rules:
+    - host: {{ .Values.ingressUi.host }}
+      http:
+        paths:
+          - path: {{ .Values.ingressUi.path }}
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ .Release.Name }}-registry-ui-svc
+                port:
+                  number: 80
+  tls:
+    {{- range .Values.ingressUi.tls }}
+    - secretName: {{ .secretName }}
+      hosts:
+        {{- range .hosts }}
+        - {{ . }}
+        {{- end }}
+    {{- end }}
+{{- end }}
