@@ -1,0 +1,36 @@
+{{- range .Values.sites }}
+{{- if and $.Values.defaults.ingress.enabled .host .path }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $.Release.Name }}-ig
+  namespace: {{ .namespace }}
+  annotations:
+    {{- range $key, $val := $.Values.defaults.ingress.annotations }}
+    {{ $key }}: {{ $val | quote }}
+    {{- end }}
+    {{- if .errorCodes }}
+    nginx.ingress.kubernetes.io/custom-http-errors: "{{ join "," .errorCodes }}"
+    {{- end }}
+spec:
+  ingressClassName: {{ $.Values.defaults.ingress.className }}
+  rules:
+    - host: {{ .host }}
+      http:
+        paths:
+          - path: {{ .path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $.Release.Name }}-svc
+                port:
+                  number: {{ $.Values.defaults.port }}
+  {{- if $.Values.defaults.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .host }}
+      secretName: {{ $.Values.defaults.ingress.tls.secretName }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

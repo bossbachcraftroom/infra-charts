@@ -1,0 +1,11 @@
+apiVersion: v2
+name: landingpage
+description: A Helm chart to serve the landing page
+version: 0.1.0
+
+# This chart supports:
+# - One or more static sites
+# - Each site uses a ConfigMap for HTML content
+# - Each site has its own Deployment and Service
+
+dependencies: []
