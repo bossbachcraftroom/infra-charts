@@ -1,0 +1,30 @@
+{{- range .Values.sites }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}
+  namespace: {{ .namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ $.Release.Name }}
+    spec:
+      containers:
+        - name: nginx
+          image: {{ $.Values.defaults.image }}
+          ports:
+            - containerPort: {{ $.Values.defaults.port }}
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            name: {{ $.Release.Name }}-html
+---
+{{- end }}

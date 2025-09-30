@@ -1,0 +1,15 @@
+{{- range .Values.sites }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $.Release.Name }}-html
+  namespace: {{ .namespace }}
+data:
+  index.html: |
+{{- if .html }}
+{{ .html | indent 4 }}
+{{- else }}
+    <html><body><h1>No content defined.</h1></body></html>
+{{- end }}
+---
+{{- end }}
