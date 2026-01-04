@@ -1,21 +1,30 @@
 {{- if .Values.ingress.enabled }}
+
+{{- $fullname := include "personality-test-frontend.fullname" . }}
+{{- $frontendPort := .Values.service.port | default 80 }}
+
+{{- $backendName := .Values.backend.serviceName | default "personality-test-backend" }}
+{{- $backendPort := .Values.backend.servicePort | default 8000 }}
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "personality-test-frontend.fullname" . }}
+  name: {{ $fullname }}
   labels:
     {{- include "personality-test-frontend.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+
 spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
   {{- end }}
-  {{- if .Values.ingress.tls }}
+
+  {{- with .Values.ingress.tls }}
   tls:
-    {{- range .Values.ingress.tls }}
+    {{- range . }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -23,28 +32,37 @@ spec:
       secretName: {{ .secretName }}
     {{- end }}
   {{- end }}
+
   rules:
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
-          # API Backend Proxy
-          - path: /api
-            pathType: Prefix
+
+          {{- if $.Values.ingress.apiPath.enabled | default true }}
+          # API Backend
+          - path: {{ $.Values.ingress.apiPath.path | default "/api" }}
+            pathType: {{ $.Values.ingress.apiPath.pathType | default "Prefix" }}
             backend:
               service:
-                name: {{ dig "backend" "serviceName" "personality-test-backend" $.Values }}
+                name: {{ $backendName }}
                 port:
-                  number: {{ dig "backend" "servicePort" 8000 $.Values }}
-          # Frontend paths
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
-            backend:
-              service:
-                name: {{ include "personality-test-frontend.fullname" $ }}
-                port:
-                  number: {{ $.Values.service.port }}
+                  number: {{ $backendPort }}
           {{- end }}
+
+          {{- with .paths }}
+          # Frontend paths
+          {{- range . }}
+          - path: {{ .path }}
+            pathType: {{ .pathType | default "Prefix" }}
+            backend:
+              service:
+                name: {{ $fullname }}
+                port:
+                  number: {{ $frontendPort }}
+          {{- end }}
+          {{- end }}
+
     {{- end }}
+
 {{- end }}
