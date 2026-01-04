@@ -33,9 +33,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.backend.serviceName | default "personality-test-backend" }}
+                name: {{ dig "backend" "serviceName" "personality-test-backend" $.Values }}
                 port:
-                  number: {{ .Values.backend.servicePort | default 8000 }}
+                  number: {{ dig "backend" "servicePort" 8000 $.Values }}
           # Frontend paths
           {{- range .paths }}
           - path: {{ .path }}
