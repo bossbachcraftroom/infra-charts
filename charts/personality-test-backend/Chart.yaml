@@ -1,0 +1,12 @@
+apiVersion: v2
+name: personality-test-backend
+description: Personality Test Backend API Service
+type: application
+version: 1.0.0
+appVersion: 1.0.0
+keywords:
+  - personality-test
+  - backend
+  - fastapi
+maintainers:
+  - name: Bossbach
